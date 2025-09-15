@@ -9,7 +9,7 @@ import { useEffect, useState } from "react"
 export type StoredRoute = {
   start: string
   end: string
-  metro?: string // Add metro field to stored routes
+  metro?: string
   time: number
   fare: number
   at: number
@@ -111,15 +111,15 @@ export function HistoryPanels({
             recent.map(([k, r]) => (
               <Badge
                 key={k}
-                variant="secondary"
-                className="cursor-pointer capitalize flex flex-col items-start p-2 h-auto"
+                variant="outline"
+                className="cursor-pointer capitalize"
                 onClick={() => onPick(r.start, r.end)}
                 title={`~${Math.round(r.time)} min • ₹${r.fare}`}
               >
-                <div className="font-medium">
-                  {r.start} → {r.end}
-                </div>
-                {r.metro && <div className="text-xs opacity-75 mt-1">{r.metro}</div>}
+                {/* <div className="font-medium"> */}
+                  {r.start + " -> " +r.end}
+                {/* </div> */}
+                {/* {r.metro && <div className="text-xs opacity-75 mt-1">{r.metro}</div>} */}
               </Badge>
             ))
           )}
@@ -143,7 +143,7 @@ export function HistoryPanels({
                   onClick={() => onPick(start, end)}
                   title={`${count}x traveled`}
                 >
-                  {start} → {end}
+                  {start + " -> " + end}
                 </Badge>
               )
             })
