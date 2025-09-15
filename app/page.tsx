@@ -4,6 +4,7 @@ import { useState } from "react"
 import useSWRMutation from "swr/mutation"
 import { fetchRoute } from "@/lib/api"
 import { StationAutocomplete } from "@/components/station-autocomplete"
+import { MetroSelector } from "@/components/metro-selector"
 import { RouteSummary } from "@/components/route-summary"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,16 +19,27 @@ type RouteData = Awaited<ReturnType<typeof fetchRoute>>
 function PlannerInner() {
   const [start, setStart] = useState("")
   const [end, setEnd] = useState("")
+  const [selectedMetroId, setSelectedMetroId] = useState("")
+  const [selectedMetroName, setSelectedMetroName] = useState("")
   const { user } = useAuth()
   const { update } = useRouteStorage()
   const { toast } = useToast()
 
-  const { trigger, data, isMutating, error } = useSWRMutation<RouteData, Error, string, { start: string; end: string }>(
-    "route",
-    async (_key, { arg }) => fetchRoute(arg.start, arg.end),
-  )
+  const { trigger, data, isMutating, error } = useSWRMutation<
+    RouteData,
+    Error,
+    string,
+    { start: string; end: string; metroId: string }
+  >("route", async (_key, { arg }) => fetchRoute(arg.start, arg.end, arg.metroId))
 
-  const canSearch = start.trim().length > 0 && end.trim().length > 0
+  const canSearch = start.trim().length > 0 && end.trim().length > 0 && selectedMetroId
+
+  const handleMetroChange = (metroId: string, metroName: string) => {
+    setSelectedMetroId(metroId)
+    setSelectedMetroName(metroName)
+    setStart("")
+    setEnd("")
+  }
 
   return (
     <main className="mx-auto max-w-3xl p-6 space-y-6">
@@ -41,16 +53,17 @@ function PlannerInner() {
           <CardTitle className="text-pretty">Plan your trip</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
+          <MetroSelector value={selectedMetroId} onChange={handleMetroChange} />
           <div className="grid md:grid-cols-2 gap-4">
-            <StationAutocomplete label="Start Station" value={start} onChange={setStart} />
-            <StationAutocomplete label="Destination" value={end} onChange={setEnd} />
+            <StationAutocomplete label="Start Station" value={start} onChange={setStart} metroId={selectedMetroId} />
+            <StationAutocomplete label="Destination" value={end} onChange={setEnd} metroId={selectedMetroId} />
           </div>
           <div className="flex items-center gap-3">
             <Button
               disabled={!canSearch || isMutating}
               onClick={async () => {
                 try {
-                  const res = await trigger({ start, end })
+                  const res = await trigger({ start, end, metroId: selectedMetroId })
                   if (!res || !Array.isArray(res.finalPath) || res.finalPath.length === 0) {
                     toast({
                       title: "No route found",
@@ -63,6 +76,7 @@ function PlannerInner() {
                     update({
                       start,
                       end,
+                      metro: selectedMetroName,
                       time: res.totalTime,
                       fare: res.estimatedFare,
                       at: Date.now(),
@@ -110,9 +124,7 @@ function PlannerInner() {
         }}
       />
 
-      <footer className="pt-8 text-center text-xs text-muted-foreground">
-        © Copyright 2025 MetroRF
-      </footer>
+      <footer className="pt-8 text-center text-xs text-muted-foreground">© Copyright 2025 MetroRF</footer>
     </main>
   )
 }

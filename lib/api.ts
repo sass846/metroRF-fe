@@ -27,6 +27,12 @@ type RegisterResponse = {
   message: string;
 };
 
+type MetroResponse = {
+  id: number;
+  name: string;
+  city: string;
+}[];
+
 async function handleApiResponse(res: Response) {
   if (!res.ok) {
     let errorData = { error: `API Error: ${res.status} ${res.statusText}` };
@@ -38,16 +44,23 @@ async function handleApiResponse(res: Response) {
   return res.json();
 }
 
-export async function fetchRecommendations(query: string): Promise<string[]> {
-  if (!query?.trim()) return [];
+export async function fetchRecommendations(
+  query: string,
+  metroId?: string
+): Promise<string[]> {
+  if (!query?.trim() || !metroId) return [];
   try {
-    const res = await fetch(`${API_BASE}/api/v1/recommend1`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stationName: query }),
-    });
-    const data: RecommendResponse = await handleApiResponse(res);
-    return data.recommendations1 ?? [];
+    const res = await fetch(
+      `${API_BASE}/api/v1/metros/${metroId}/stations?prefix=${encodeURIComponent(
+        query
+      )}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    const data: string[] = await handleApiResponse(res);
+    return data;
   } catch (error) {
     console.log("Failed to fetch recommendations: ", error);
     return [];
@@ -56,12 +69,20 @@ export async function fetchRecommendations(query: string): Promise<string[]> {
 
 export async function fetchRoute(
   start: string,
-  end: string
+  end: string,
+  metroId?: string
 ): Promise<RouteResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/`, {
+  if (!metroId) {
+    throw new Error("Metro ID is required for route calculation");
+  }
+
+  const res = await fetch(`${API_BASE}/api/v1/metros/${metroId}/route`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ startStation: start, endStation: end }),
+    body: JSON.stringify({
+      startStation: start,
+      endStation: end,
+    }),
   });
   const data = (await handleApiResponse(res)) as Partial<RouteResponse>;
 
@@ -98,4 +119,17 @@ export async function loginUser(
     body: JSON.stringify({ email, password }),
   });
   return handleApiResponse(res);
+}
+
+export async function fetchMetros(): Promise<MetroResponse> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/metros`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    return handleApiResponse(res);
+  } catch (error) {
+    console.log("Failed to fetch metros: ", error);
+    return [];
+  }
 }

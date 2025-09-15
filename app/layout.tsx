@@ -10,6 +10,7 @@ import { Suspense } from "react"
 export const metadata: Metadata = {
   title: "Metro route Finder",
   description: "Get the shortest Path between two stations",
+    generator: 'v0.app'
 }
 
 export default function RootLayout({

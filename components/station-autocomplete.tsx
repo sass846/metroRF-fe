@@ -20,19 +20,21 @@ export function StationAutocomplete({
   value,
   onChange,
   placeholder = "Type station name",
+  metroId, // Add metroId prop to filter stations by metro
 }: {
   label: string
   value: string
   onChange: (v: string) => void
   placeholder?: string
+  metroId?: string
 }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const debounced = useDebounced(value, 250)
 
   const { data: options = [], isValidating } = useSWR(
-    debounced ? ["/recommend", debounced] : null,
-    () => fetchRecommendations(debounced),
+    debounced && metroId ? ["/recommend", debounced, metroId] : null,
+    () => fetchRecommendations(debounced, metroId),
     { keepPreviousData: true },
   )
 
@@ -64,6 +66,7 @@ export function StationAutocomplete({
           role="combobox"
           aria-expanded={showList}
           aria-controls={showList ? "station-suggestions" : undefined}
+          disabled={!metroId}
         />
         {showList && (
           <div
